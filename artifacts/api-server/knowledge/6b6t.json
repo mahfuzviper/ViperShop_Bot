@@ -1,0 +1,16 @@
+{
+  "category": "6b6t",
+  "entries": [
+    {
+      "topic": "server-basics",
+      "question": "What is the 6b6t server address and how do I join?",
+      "answer": "The 6b6t server address, supported version, and join instructions have not been verified yet. Add them to this file or use /knowledge add.",
+      "source": "ADD_OFFICIAL_SOURCE_HERE",
+      "verified": false
+    }
+  ],
+  "serverAddress": "ADD_SERVER_ADDRESS_HERE",
+  "minecraftVersion": "ADD_MINECRAFT_VERSION_HERE",
+  "usefulLinks": [],
+  "warnings": []
+}

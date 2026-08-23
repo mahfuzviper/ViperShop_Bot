@@ -1,0 +1,1 @@
+- [ViperCryo runtime](vipercyro-runtime.md) — artifact-prefixed health routes and conditional Discord privileged intent are required for reliable startup.

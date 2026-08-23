@@ -1,0 +1,12 @@
+{
+  "category": "Minecraft",
+  "entries": [
+    {
+      "topic": "troubleshooting",
+      "question": "How can I improve Minecraft FPS?",
+      "answer": "Try lowering render distance, closing background applications, updating graphics drivers, and using performance-focused settings or mods appropriate for your version.",
+      "source": "General troubleshooting guidance",
+      "verified": true
+    }
+  ]
+}

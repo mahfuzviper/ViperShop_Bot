@@ -1,0 +1,11 @@
+{
+  "category": "Gaming",
+  "entries": [
+    { "topic": "Valorant", "question": "Valorant help", "answer": "Ask a specific Valorant question for guidance.", "source": "General game knowledge", "verified": true },
+    { "topic": "Roblox", "question": "Roblox help", "answer": "Ask a specific Roblox question for guidance.", "source": "General game knowledge", "verified": true },
+    { "topic": "CS2", "question": "CS2 help", "answer": "Ask a specific CS2 question for guidance.", "source": "General game knowledge", "verified": true },
+    { "topic": "GTA V", "question": "GTA V help", "answer": "Ask a specific GTA V question for guidance.", "source": "General game knowledge", "verified": true },
+    { "topic": "Fortnite", "question": "Fortnite help", "answer": "Ask a specific Fortnite question for guidance.", "source": "General game knowledge", "verified": true },
+    { "topic": "eFootball", "question": "eFootball help", "answer": "Ask a specific eFootball question for guidance.", "source": "General game knowledge", "verified": true }
+  ]
+}
