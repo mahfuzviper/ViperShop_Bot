@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { Client, GatewayIntentBits, PermissionsBitField } from "discord.js";
+import { Client, GatewayIntentBits, PermissionsBitField, EmbedBuilder } from "discord.js";
 import Database from "better-sqlite3";
 import OpenAI from "openai";
 import { readFileSync, mkdirSync } from "node:fs";
@@ -34,6 +34,8 @@ db.exec(`
 `);
 
 const log = (message, extra = {}) => console.log(`[ViperCryo] ${message}`, extra);
+const embed = (title, description, color = 0x58a6ff) => new EmbedBuilder().setColor(color).setTitle(title).setDescription(description).setFooter({ text: "ViperCryo Assistant" }).setTimestamp();
+const replyEmbed = (interaction, title, description, color) => interaction.reply({ embeds: [embed(title, description, color)] });
 const now = () => new Date().toISOString();
 const envNum = (key, fallback) => Number.isFinite(Number(process.env[key])) ? Number(process.env[key]) : fallback;
 const xpCooldown = envNum("XP_COOLDOWN_SECONDS", 60) * 1000;
@@ -116,7 +118,15 @@ const commands = [
   { name: "leaderboard", description: "Show the most active members" },
   { name: "stats", description: "Show your activity statistics" },
   { name: "help", description: "Show available commands" },
-  { name: "knowledge", description: "Manage assistant knowledge", options: [{ name: "action", description: "Action", type: 3, required: true, choices: ["add", "edit", "delete", "search", "list", "import", "export"].map((x) => ({ name: x, value: x })) }, { name: "text", description: "Search text or JSON payload", type: 3 }, { name: "id", description: "Knowledge entry ID for edit or delete", type: 4 }] }
+  { name: "knowledge", description: "Manage assistant knowledge", options: [
+    { type: 1, name: "add", description: "Add one knowledge record", options: [{ type: 3, name: "data", description: "JSON knowledge record", required: true }] },
+    { type: 1, name: "edit", description: "Edit a knowledge record", options: [{ type: 4, name: "id", description: "Entry ID", required: true }, { type: 3, name: "data", description: "JSON replacement fields", required: true }] },
+    { type: 1, name: "delete", description: "Delete a knowledge record", options: [{ type: 4, name: "id", description: "Entry ID", required: true }] },
+    { type: 1, name: "search", description: "Search stored knowledge", options: [{ type: 3, name: "query", description: "Search text", required: true }] },
+    { type: 1, name: "list", description: "List categories and topics" },
+    { type: 1, name: "import", description: "Import a JSON array", options: [{ type: 3, name: "data", description: "JSON array of records", required: true }] },
+    { type: 1, name: "export", description: "Export stored knowledge" }
+  ] }
 ];
 const intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages];
 if (process.env.ENABLE_MESSAGE_CONTENT === "true" || process.env.AI_CHANNEL_ID || process.env.AI_TRIGGER) intents.push(GatewayIntentBits.MessageContent);
@@ -151,18 +161,19 @@ client.on("interactionCreate", async (i) => {
       await i.deferReply(); const q = name === "game" ? `${i.options.getString("name")}: ${i.options.getString("question")}` : i.options.getString("question");
       return i.editReply(await answerQuestion(q, name === "minecraft" ? "Minecraft" : undefined));
     }
-    if (name === "6b6t") return i.reply({ content: await answerQuestion("What is 6b6t and how do I join?", "6b6t") });
-    if (name === "help") return i.reply("**ViperCryo Assistant**\n`/ask` questions · `/6b6t` info · `/minecraft` Minecraft help · `/game` game help · `/rank` · `/leaderboard` · `/stats` · `/knowledge` staff tools");
-    if (["rank", "stats"].includes(name)) { const u = getUser(i.user.id, guildId); return i.reply(`**${i.user.username}**\nLevel: ${u.level}\nXP: ${u.xp} / ${xpForNext(u.level)}\nMessages: ${u.messages}\nDaily: ${u.daily_messages} · Weekly: ${u.weekly_messages} · Monthly: ${u.monthly_messages}`); }
-    if (name === "leaderboard") { const rows = db.prepare("SELECT * FROM users WHERE guild_id=? ORDER BY xp DESC LIMIT 10").all(guildId); return i.reply(rows.length ? rows.map((u, n) => `**${n + 1}.** <@${u.user_id}> — Level ${u.level}, ${u.xp} XP, ${u.messages} messages`).join("\n") : "No activity recorded yet."); }
+    if (name === "6b6t") return i.reply({ embeds: [embed("6b6t Information", await answerQuestion("What is 6b6t and how do I join?", "6b6t"))] });
+    if (name === "help") return replyEmbed(i, "ViperCryo Assistant", "`/ask` questions · `/6b6t` info · `/minecraft` Minecraft help · `/game` game help · `/rank` · `/leaderboard` · `/stats` · `/knowledge` staff tools");
+    if (["rank", "stats"].includes(name)) { const u = getUser(i.user.id, guildId); return replyEmbed(i, `${i.user.username}'s Activity`, `Level: **${u.level}**\nXP: **${u.xp} / ${xpForNext(u.level)}**\nMessages: **${u.messages}**\nDaily: **${u.daily_messages}** · Weekly: **${u.weekly_messages}** · Monthly: **${u.monthly_messages}`); }
+    if (name === "leaderboard") { const rows = db.prepare("SELECT * FROM users WHERE guild_id=? ORDER BY xp DESC LIMIT 10").all(guildId); return replyEmbed(i, "ViperCryo Leaderboard", rows.length ? rows.map((u, n) => `**${n + 1}.** <@${u.user_id}> — Level ${u.level}, ${u.xp} XP, ${u.messages} messages`).join("\n") : "No activity recorded yet."); }
     if (name === "knowledge") {
       if (!isStaff(i)) return i.reply({ content: "Only administrators or configured staff can manage knowledge.", ephemeral: true });
-      const action = i.options.getString("action"), text = i.options.getString("text") || "";
-      if (action === "search") return i.reply(searchKnowledge(text).map((r) => `**${r.id}. ${r.topic}** — ${r.answer}`).join("\n") || "No matching knowledge found.");
-      if (action === "list") return i.reply([...new Set(db.prepare("SELECT category, topic FROM knowledge WHERE guild_id IN ('*', ?)").all(guildId).map((r) => `${r.category} / ${r.topic}`))].join("\n") || "Knowledge base is empty.");
+      const action = i.options.getSubcommand();
+      const text = i.options.getString("data") || i.options.getString("query") || "";
+      if (action === "search") return replyEmbed(i, "Knowledge Search", searchKnowledge(text).map((r) => `**${r.id}. ${r.topic}** — ${r.answer}`).join("\n") || "No matching knowledge found.");
+      if (action === "list") return replyEmbed(i, "Knowledge Categories", [...new Set(db.prepare("SELECT category, topic FROM knowledge WHERE guild_id IN ('*', ?)").all(guildId).map((r) => `${r.category} / ${r.topic}`))].join("\n") || "Knowledge base is empty.");
       if (action === "add") { const item = JSON.parse(text); db.prepare("INSERT INTO knowledge (guild_id,category,topic,question,answer,source,verified,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)").run(guildId, item.category, item.topic, item.question, item.answer, item.source || null, item.verified ? 1 : 0, i.user.id, now(), now()); return i.reply("Knowledge entry added."); }
-      if (action === "edit") { const item = JSON.parse(text); const id = i.options.getInteger("id"); if (!id) return i.reply("Provide the entry `id` to edit."); const result = db.prepare("UPDATE knowledge SET category=?, topic=?, question=?, answer=?, source=?, verified=?, updated_at=? WHERE id=? AND guild_id=?").run(item.category, item.topic, item.question, item.answer, item.source || null, item.verified ? 1 : 0, now(), id, guildId); return i.reply(result.changes ? "Knowledge entry updated." : "Knowledge entry was not found."); }
-      if (action === "delete") { const id = i.options.getInteger("id"); if (!id) return i.reply("Provide the entry `id` to delete."); const result = db.prepare("DELETE FROM knowledge WHERE id=? AND guild_id=?").run(id, guildId); return i.reply(result.changes ? "Knowledge entry deleted." : "Knowledge entry was not found."); }
+      if (action === "edit") { const item = JSON.parse(text); const id = i.options.getInteger("id"); const result = db.prepare("UPDATE knowledge SET category=?, topic=?, question=?, answer=?, source=?, verified=?, updated_at=? WHERE id=? AND guild_id=?").run(item.category, item.topic, item.question, item.answer, item.source || null, item.verified ? 1 : 0, now(), id, guildId); return replyEmbed(i, result.changes ? "Knowledge Updated" : "Knowledge Not Found", result.changes ? `Entry **${id}** was updated.` : `No guild entry exists with ID **${id}**.`, result.changes ? 0x2ecc71 : 0xe74c3c); }
+      if (action === "delete") { const id = i.options.getInteger("id"); const result = db.prepare("DELETE FROM knowledge WHERE id=? AND guild_id=?").run(id, guildId); return replyEmbed(i, result.changes ? "Knowledge Deleted" : "Knowledge Not Found", result.changes ? `Entry **${id}** was deleted.` : `No guild entry exists with ID **${id}**.`, result.changes ? 0x2ecc71 : 0xe74c3c); }
       if (action === "import") { const items = JSON.parse(text); const list = Array.isArray(items) ? items : [items]; const insert = db.prepare("INSERT INTO knowledge (guild_id,category,topic,question,answer,source,verified,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"); const addMany = db.transaction((entries) => { for (const item of entries) insert.run(guildId, item.category, item.topic, item.question, item.answer, item.source || null, item.verified ? 1 : 0, i.user.id, now(), now()); }); addMany(list); return i.reply(`Imported ${list.length} knowledge entr${list.length === 1 ? "y" : "ies"}.`); }
       if (action === "export") { const rows = db.prepare("SELECT category,topic,question,answer,source,verified FROM knowledge WHERE guild_id IN ('*', ?)").all(guildId); return i.reply({ content: "Knowledge export", files: [{ attachment: Buffer.from(JSON.stringify(rows, null, 2)), name: "vipercyro-knowledge.json" }] }); }
       return i.reply("Use `/knowledge add`, `/knowledge edit`, or `/knowledge import` with JSON, and `search`, `list`, `delete`, or `export` as needed.");

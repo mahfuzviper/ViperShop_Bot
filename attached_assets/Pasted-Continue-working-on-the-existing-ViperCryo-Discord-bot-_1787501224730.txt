@@ -1,0 +1,269 @@
+Continue working on the existing ViperCryo Discord bot. Do NOT rebuild the project from scratch and do NOT remove any currently working features.
+
+The bot is already online and connected to Discord. The current implementation is working.
+
+Now improve the existing system with the following tasks.
+
+## 1. KNOWLEDGE SYSTEM
+
+Make the knowledge system extremely easy for a server administrator to manage.
+
+The administrator must be able to use:
+
+/knowledge add
+/knowledge edit
+/knowledge delete
+/knowledge search
+/knowledge list
+/knowledge import
+/knowledge export
+
+Make sure all these commands actually work.
+
+Use SQLite as the primary persistent storage.
+
+The JSON files should only be seed/default knowledge and should not be the only storage mechanism.
+
+## 2. KNOWLEDGE CATEGORIES
+
+Create these categories:
+
+* ViperCryo
+* 6b6t
+* Minecraft
+* Gaming
+* FAQ
+
+Allow administrators to create additional categories later.
+
+## 3. KNOWLEDGE FORMAT
+
+Each knowledge record should support:
+
+* category
+* topic
+* question
+* answer
+* source
+* verified
+* created_by
+* created_at
+* updated_at
+
+Never invent server-specific information.
+
+If information is unknown, leave it as a placeholder.
+
+## 4. ADMIN-ONLY SECURITY
+
+Only users with:
+
+* Administrator permission
+
+OR
+
+* configured STAFF_ROLE_ID
+
+may manage knowledge.
+
+Normal members must NOT be able to add, edit, delete, import, or export knowledge.
+
+Return a clean permission error when unauthorized users attempt these commands.
+
+## 5. AI INTEGRATION
+
+The existing optional AI integration should remain compatible.
+
+Use:
+
+AI_API_KEY
+AI_BASE_URL
+AI_MODEL
+
+from Replit Secrets/environment variables.
+
+If AI_API_KEY is missing:
+
+* Do not crash.
+* Continue using local knowledge.
+* Return a useful answer based on stored knowledge.
+
+If AI_API_KEY exists:
+
+Use AI to generate natural responses from relevant knowledge.
+
+Do not send the entire knowledge database to the AI.
+
+Only send relevant retrieved context.
+
+## 6. KNOWLEDGE PRIORITY
+
+Use this priority:
+
+1. Verified ViperCryo knowledge
+2. Verified 6b6t knowledge
+3. Verified Minecraft/game knowledge
+4. Trusted current web information if web search is configured
+5. General AI knowledge
+
+Never present unknown ViperCryo-specific information as fact.
+
+## 7. WEB SEARCH
+
+If the existing project already has a search integration, improve it.
+
+If no search API key is configured, the bot must continue working normally.
+
+Use web search when a question requires current information, for example:
+
+* latest Minecraft version
+* current game updates
+* current server information
+* recent changes
+* current gaming news
+
+Prefer official sources when possible.
+
+Do not claim that web search was performed if it was not actually performed.
+
+## 8. NATURAL LANGUAGE
+
+The bot should understand:
+
+English
+Bangla
+Banglish
+
+Examples:
+
+"6b6t er IP ki?"
+"6b6t কী?"
+"What is 6b6t?"
+"Minecraft e FPS barabo kivabe?"
+"valorant er minimum requirement ki?"
+
+The AI should answer in the user's language when practical.
+
+## 9. AI CHANNEL
+
+Keep support for:
+
+AI_CHANNEL_ID
+AI_TRIGGER
+ENABLE_MESSAGE_CONTENT
+
+The bot should NOT automatically answer every normal Discord message.
+
+It should respond when:
+
+* mentioned
+* used in the configured AI channel
+* activated with the configured trigger
+* /ask is used
+
+## 10. ACTIVE MEMBER SYSTEM
+
+Verify that the existing XP system works correctly.
+
+Track:
+
+* messages
+* XP
+* level
+* daily activity
+* weekly activity
+* monthly activity
+
+Respect XP cooldowns.
+
+Do not allow users to easily farm XP by spamming.
+
+Verify:
+
+/rank
+/leaderboard
+/stats
+
+all work correctly.
+
+## 11. EMBEDS
+
+Improve the Discord response design.
+
+Use consistent ViperCryo-style embeds for:
+
+* AI answers
+* knowledge results
+* leaderboard
+* rank
+* errors
+* success messages
+* help
+
+Keep them clean and professional.
+
+## 12. ERROR HANDLING
+
+Verify that these situations do not crash the bot:
+
+* AI API unavailable
+* invalid API key
+* search API unavailable
+* database error
+* invalid command input
+* unauthorized admin command
+* missing optional environment variable
+* Discord API error
+
+Use graceful fallbacks.
+
+## 13. HEALTH CHECK
+
+Keep these working:
+
+/api/
+/api/health
+/api/healthz
+
+The health response should clearly show:
+
+* bot status
+* Discord connection
+* database connection
+* AI availability
+
+Do not expose secrets.
+
+## 14. REPLIT
+
+Make sure the current Replit workflow continues to work.
+
+Do not break the existing API server.
+
+After modifications:
+
+1. Install dependencies if necessary.
+2. Run syntax checks.
+3. Start the application.
+4. Check the health endpoint.
+5. Verify Discord connection.
+6. Verify slash-command registration.
+7. Fix any runtime errors.
+
+## 15. IMPORTANT
+
+Do NOT replace the existing working project.
+
+Do NOT remove existing commands.
+
+Do NOT invent 6b6t IP/version/rules.
+
+Use placeholders until I provide verified information.
+
+At the end, report:
+
+* files changed
+* features verified
+* environment variables required
+* anything still missing
+* whether the live service is online
