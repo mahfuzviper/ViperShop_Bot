@@ -49,18 +49,26 @@ const aiGlobal = { until: 0 };
 
 function seedKnowledge() {
   const count = db.prepare("SELECT COUNT(*) AS n FROM knowledge").get().n;
-  if (count) return;
   const files = ["vipercyro.json", "6b6t.json", "minecraft.json", "games.json"];
   const insert = db.prepare(`INSERT INTO knowledge
     (category, topic, question, answer, source, verified, created_by, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, 'seed', ?, ?)`);
-  for (const file of files) {
+  for (const file of count ? [] : files) {
     const full = resolve(root, "knowledge", file);
     const payload = JSON.parse(readFileSync(full, "utf8"));
     for (const item of payload.entries ?? []) insert.run(
       payload.category, item.topic, item.question, item.answer, item.source ?? null,
       item.verified ? 1 : 0, now(), now()
     );
+  }
+  const official = JSON.parse(readFileSync(resolve(root, "knowledge", "vipercyro-official.json"), "utf8"));
+  const addOfficial = db.prepare(`INSERT INTO knowledge
+    (guild_id, category, topic, question, answer, source, verified, created_by, created_at, updated_at)
+    SELECT '*', ?, ?, ?, ?, ?, 1, 'ViperCryo Official Information', ?, ?
+    WHERE NOT EXISTS (SELECT 1 FROM knowledge WHERE category=? AND topic=? AND question=? AND source=?)`);
+  for (const item of official.entries ?? []) {
+    const timestamp = now();
+    addOfficial.run(official.category, item.topic, item.question, item.answer, official.source, timestamp, timestamp, official.category, item.topic, item.question, official.source);
   }
 }
 seedKnowledge();
