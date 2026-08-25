@@ -1,0 +1,475 @@
+Fix the existing ViperCryo Discord bot.
+
+IMPORTANT: The bot is already successfully added to my Discord server and appears online as `ViperCryo_Bot`.
+
+However, when I run these slash commands in Discord:
+
+* `/ask`
+* `/6b6t`
+
+Discord shows:
+
+`Something went wrong while handling that command.`
+
+This means the bot is receiving the interaction but the command handler is throwing a runtime error.
+
+DO NOT rebuild the bot from scratch.
+DO NOT remove existing features.
+DO NOT change the Discord bot/application.
+Fix the existing implementation.
+
+---
+
+## 1. FIRST: INSPECT THE ACTUAL ERROR
+
+Start the existing Replit workflow.
+
+Check the complete runtime logs immediately after executing:
+
+`/ask`
+
+and:
+
+`/6b6t`
+
+Find the exact JavaScript/Node.js error and stack trace.
+
+Do NOT guess the cause.
+
+Fix the actual root cause.
+
+---
+
+## 2. CHECK ALL SLASH COMMANDS
+
+Inspect the command registration and command execution system.
+
+Verify:
+
+* `/ask`
+* `/6b6t`
+* `/minecraft`
+* `/game`
+* `/rank`
+* `/leaderboard`
+* `/stats`
+* `/help`
+* `/knowledge`
+
+Make sure every command:
+
+1. Is registered correctly.
+2. Is loaded correctly.
+3. Has the correct command name.
+4. Uses the correct Discord.js v14 API.
+5. Has a valid execute() handler.
+6. Properly responds to the Discord interaction.
+7. Handles errors safely.
+
+---
+
+## 3. DISCORD.JS V14 INTERACTION HANDLING
+
+Make sure commands use the correct Discord.js v14 interaction API.
+
+For example, commands should properly use:
+
+`interaction.reply()`
+
+or:
+
+`interaction.deferReply()`
+
+followed by:
+
+`interaction.editReply()`
+
+Do not attempt to reply twice to the same interaction.
+
+Prevent:
+
+`InteractionAlreadyReplied`
+
+errors.
+
+If an interaction has already been replied to or deferred, use the appropriate follow-up/edit method.
+
+---
+
+## 4. /ASK COMMAND
+
+Fix `/ask` completely.
+
+Expected usage:
+
+`/ask question:<question>`
+
+Example:
+
+`/ask question: What is ViperCryo?`
+
+The command must:
+
+1. Read the `question` option safely.
+2. Validate that the question exists.
+3. Search the local knowledge database.
+4. Retrieve relevant ViperCryo/6b6t/Minecraft knowledge.
+5. If AI is configured, send relevant context to the AI.
+6. If AI is NOT configured, answer using local knowledge.
+7. Return a Discord response.
+8. Never crash if AI is unavailable.
+
+If no knowledge exists, return a useful message such as:
+
+`I don't have verified information about that yet.`
+
+Do NOT throw an exception.
+
+---
+
+## 5. /6B6T COMMAND
+
+Fix `/6b6t`.
+
+The command must work even when no AI API key is configured.
+
+It should retrieve the stored 6b6t knowledge and display it in a Discord embed.
+
+If the 6b6t knowledge is incomplete, show only verified information.
+
+Do NOT invent:
+
+* IP
+* version
+* rules
+* player count
+* server status
+
+If information is missing, display an appropriate "not configured yet" message.
+
+---
+
+## 6. KNOWLEDGE SERVICE
+
+Inspect `knowledgeService.js` and the SQLite database implementation.
+
+Verify:
+
+* Database connection
+* Table creation
+* Query syntax
+* Parameterized queries
+* Knowledge retrieval
+* Category filtering
+* Verified filtering
+* Search functionality
+
+Make sure the bot does not fail if the database is empty.
+
+The bot should return an empty result gracefully.
+
+---
+
+## 7. SQLITE DATABASE
+
+Verify that the database file exists and is initialized correctly.
+
+Expected database location:
+
+`artifacts/api-server/data/vipercyro.sqlite`
+
+Make sure the application creates the database/tables automatically if they do not exist.
+
+Do not assume that the database already contains records.
+
+---
+
+## 8. AI FALLBACK
+
+The current bot may have:
+
+`AI_API_KEY`
+
+disabled/not configured.
+
+This MUST NOT cause `/ask` or `/6b6t` to fail.
+
+If:
+
+`AI_API_KEY`
+
+is missing:
+
+Use local knowledge only.
+
+If AI is configured but the API fails:
+
+Fall back to local knowledge instead of throwing an unhandled exception.
+
+---
+
+## 9. ERROR HANDLER
+
+Add a global interaction error handler.
+
+If a command throws an error:
+
+* Log the real error to the Replit console.
+* Do not expose stack traces to Discord users.
+* Send a clean Discord error message.
+
+Example:
+
+`⚠️ Something went wrong while processing this command. Please try again.`
+
+Make sure the error handler itself cannot throw another error when the interaction has already been replied to/deferred.
+
+---
+
+## 10. ASYNC ERROR HANDLING
+
+Inspect all async functions used by commands.
+
+Use proper:
+
+`try/catch`
+
+around:
+
+* Database operations
+* AI requests
+* Web searches
+* Knowledge searches
+* Discord replies
+* File operations
+
+Do not leave rejected Promises unhandled.
+
+---
+
+## 11. COMMAND LOADING
+
+Inspect the command loader.
+
+Make sure commands are loaded from the correct path.
+
+The current project may have a structure similar to:
+
+`src/commands/`
+
+and:
+
+`src/events/`
+
+Verify the actual paths instead of assuming them.
+
+Make sure there are no incorrect relative imports such as:
+
+`../services/...`
+
+when the real directory is elsewhere.
+
+Fix all incorrect imports.
+
+---
+
+## 12. COMMAND DEPLOYMENT
+
+Verify that slash commands are registered using the correct:
+
+* CLIENT_ID
+* GUILD_ID
+
+If `GUILD_ID` is configured, use guild-specific command registration for development.
+
+Make sure the registered command definitions match the actual command handlers.
+
+For example:
+
+`/ask`
+
+must have:
+
+`question`
+
+as a required string option.
+
+---
+
+## 13. TEST EVERY COMMAND
+
+After fixing the root problem, restart the Replit workflow.
+
+Then test:
+
+`/help`
+
+`/ask question: What is ViperCryo?`
+
+`/6b6t`
+
+`/minecraft question: What is Minecraft?`
+
+`/game name:Minecraft question: What is Minecraft?`
+
+`/rank`
+
+`/leaderboard`
+
+`/stats`
+
+`/knowledge list`
+
+`/knowledge search`
+
+Verify that none of these returns:
+
+`Something went wrong while handling that command.`
+
+---
+
+## 14. TEST VIPERCRYO KNOWLEDGE
+
+Test:
+
+`/ask question: Who owns ViperCryo?`
+
+Expected information:
+
+* Owner: MahfuzViper
+* Main game tag: GodMahfuz
+
+Test:
+
+`/ask question: What is ViperCryo?`
+
+Expected:
+
+ViperCryo is primarily a 6b6t-focused gaming/clan community that also supports other games, gaming discussions, updates, activities, and free-kit/giveaway opportunities.
+
+Test:
+
+`/ask question: Does ViperCryo give free kits?`
+
+The answer should mention free-kit/giveaway opportunities when available, without inventing a schedule or kit contents.
+
+---
+
+## 15. TEST BANGLA / BANGLISH
+
+Test:
+
+`/ask question: ViperCryo er owner ke?`
+
+`/ask question: ViperCryo ki?`
+
+`/ask question: ViperCryo te ki free kit dey?`
+
+The bot should retrieve the same verified knowledge.
+
+---
+
+## 16. HEALTH CHECK
+
+After fixing the commands, verify:
+
+`/api/`
+
+`/api/health`
+
+`/api/healthz`
+
+The health response should show:
+
+* API online
+* Discord connected
+* Database connected
+* AI enabled/disabled
+
+---
+
+## 17. DO NOT HIDE ERRORS
+
+During testing, if a command fails:
+
+1. Read the Replit workflow logs.
+2. Find the exact stack trace.
+3. Fix the root cause.
+4. Restart.
+5. Test again.
+
+Do not simply catch the error and hide it.
+
+The final implementation must log useful diagnostic information.
+
+Never log:
+
+* Discord token
+* AI API key
+* Environment secrets
+
+---
+
+## 18. FINAL VERIFICATION
+
+Before finishing, confirm:
+
+Discord bot:
+ONLINE
+
+Discord connection:
+CONNECTED
+
+SQLite:
+CONNECTED
+
+Slash commands:
+REGISTERED
+
+/ask:
+WORKING
+
+/6b6t:
+WORKING
+
+/minecraft:
+WORKING
+
+/game:
+WORKING
+
+/rank:
+WORKING
+
+/leaderboard:
+WORKING
+
+/stats:
+WORKING
+
+/knowledge:
+WORKING
+
+Health API:
+WORKING
+
+AI fallback:
+WORKING
+
+---
+
+## 19. FINAL REPORT
+
+After fixing everything, report:
+
+1. Exact root cause of the `/ask` and `/6b6t` error.
+2. Files changed.
+3. What was fixed.
+4. Commands tested.
+5. Health endpoint result.
+6. Discord connection result.
+7. Database result.
+8. AI status.
+9. Any remaining configuration required.
+
+Do not stop until the actual Discord slash commands work successfully.
